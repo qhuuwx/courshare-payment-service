@@ -7,14 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Transaction {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  courseId        String   @map("course_id")
-  stripeSessionId String   @map("stripe_session_id")
-  amount          Decimal  @db.Decimal(10, 2)
-  status          String
-  createdAt       DateTime @default(now()) @map("created_at")
+model Payment {
+  id                String   @id @default(cuid())
 
-  @@map("transactions")
+  userId            String
+  courseId          String
+
+  amount            Decimal
+  currency          String   @default("usd")
+
+  status            PaymentStatus
+
+  provider          PaymentProvider
+
+  stripeSessionId   String? @unique
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentProvider {
+  STRIPE
 }
