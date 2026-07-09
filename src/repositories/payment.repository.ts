@@ -11,7 +11,7 @@ export class PaymentRepository {
 
   async findById(id: string) {
     return prisma.payment.findUnique({
-      where: { id },
+      where: { stripeSessionId: id },
     });
   }
 
