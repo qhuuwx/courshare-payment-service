@@ -17,7 +17,7 @@ export class PaymentRepository {
 
   async updateStatus(id: string, status: PaymentStatus) {
     return prisma.payment.update({
-      where: { id },
+      where: { stripeSessionId: id },
       data: { status },
     });
   }

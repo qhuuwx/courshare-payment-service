@@ -1,4 +1,4 @@
-import { stripe } from "../config/stripe";
+import { stripe,stripeWebhookSecret} from "../config/stripe";
 import { Payment } from "@prisma/client";
 
 
@@ -26,4 +26,15 @@ export async function createStripeCheckoutSession(
     }
   )
   return session;
+}
+
+export function constructWebhookEvent(
+    body: Buffer,
+    signature: string
+) {
+    return stripe.webhooks.constructEvent(
+        body,
+        signature,
+        stripeWebhookSecret!
+    );
 }

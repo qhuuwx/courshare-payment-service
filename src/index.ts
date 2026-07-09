@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import checkoutRouter from "./routes/checkout.route"
+import webhookRouter from "./routes/webhooks.route";
 import { prisma } from "./prisma/prisma";
 // Load environment variables
 dotenv.config();
@@ -11,6 +12,9 @@ const port = process.env.PORT || 8083;
 
 // Middleware
 app.use(cors());
+app.use("/webhooks",express.raw({
+  type: "application/json"
+}),webhookRouter);
 app.use(express.json());
 
 // Roots/Health check endpoint
@@ -22,7 +26,6 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.use("/checkout", checkoutRouter);
-
 // Start Express Server
 const server = app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
