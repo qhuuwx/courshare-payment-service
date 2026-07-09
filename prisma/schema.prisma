@@ -36,4 +36,7 @@ enum PaymentStatus {
 
 enum PaymentProvider {
   STRIPE
+  PAYPAL
+  MOMO
+  VNPAY
 }
