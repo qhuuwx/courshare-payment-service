@@ -1,7 +1,6 @@
 import { prisma } from "../prisma/prisma";
-import { CreatePaymentDto} from "../dtos/payment.dto";
-import { PaymentStatus} from "@prisma/client";
-
+import { CreatePaymentDto } from "../dtos/payment.dto";
+import { Prisma, PaymentStatus } from "@prisma/client";
 export class PaymentRepository {
   async create(data: CreatePaymentDto) {
     return prisma.payment.create({
@@ -9,22 +8,33 @@ export class PaymentRepository {
     });
   }
 
-  async findById(id: string) {
+  async findUnique(where: Prisma.PaymentWhereUniqueInput) {
     return prisma.payment.findUnique({
-      where: { stripeSessionId: id },
+      where,
     });
   }
 
-  async updateStatus(id: string, status: PaymentStatus) {
+  async updateStatus(
+    where: Prisma.PaymentWhereUniqueInput,
+    status: PaymentStatus
+  ) {
     return prisma.payment.update({
-      where: { stripeSessionId: id },
+      where,
       data: { status },
     });
   }
-  async updateStripeSessionId(id: string, stripeSessionId: string) {
+  async update(
+    where: Prisma.PaymentWhereUniqueInput,
+    data: Prisma.PaymentUpdateInput
+  ) {
     return prisma.payment.update({
-      where: { id },
-      data: { stripeSessionId },
+      where,
+      data,
+    });
+  }
+  async findTransactionByUserId(userId: string) {
+    return prisma.payment.findMany({
+      where: { userId: userId },
     });
   }
 }

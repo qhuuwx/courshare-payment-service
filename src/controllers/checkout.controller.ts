@@ -21,7 +21,7 @@ export async function verifyCheckout(req: Request, res: Response) {
     const {stripeSessionId} = req.query;
     console.log(`Verifying payment status for Stripe session ID: ${stripeSessionId}`);
     try {
-        const paymentStatus = await paymentServices.verifyPaymentStatus(stripeSessionId);
+        const paymentStatus = await paymentServices.verifyPaymentStatus(stripeSessionId?.toString() ?? "");
         res.status(200).json({ message: "Payment status retrieved successfully", status: paymentStatus });
     } catch (error) {
         res.status(404).json({ message: "Payment not found" });

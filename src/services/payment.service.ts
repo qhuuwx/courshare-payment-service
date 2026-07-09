@@ -1,6 +1,6 @@
 import { PaymentRepository } from "../repositories/payment.repository";
 import { PaymentStatus, PaymentProvider } from "@prisma/client";
-import { createStripeCheckoutSession } from "./stripe.service";
+import { createStripeCheckoutSession, transactionRefund } from "./stripe.service";
 import { Stripe } from "stripe/cjs/stripe.core";
 const paymentRepository = new PaymentRepository();
 
@@ -17,7 +17,10 @@ export async function createCheckoutSession(input: CreatePendingPaymentInput) {
   const pendingPayment = await createPendingPayment(input);
   const stripeSession = await createStripeCheckoutSession(pendingPayment);
   // Update the pending payment record with the Stripe session ID
-  await paymentRepository.updateStripeSessionId(pendingPayment.id, stripeSession.id);
+  await paymentRepository.update(
+    { id: pendingPayment.id },
+    { stripeSessionId: stripeSession.id }
+  );
   return stripeSession;
 }
 async function createPendingPayment(
@@ -38,9 +41,13 @@ export async function handleStripeWebhookEvent(
 
       {
         const session = event.data.object;
-
         // Update Payment
-        await paymentRepository.updateStatus(session.id, PaymentStatus.SUCCESS);
+        const paymentIntentId =
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id ?? null;
+        await paymentRepository.update({ stripeSessionId: session.id }, { stripePaymentIntentId: paymentIntentId });
+        await paymentRepository.updateStatus({ stripeSessionId: session.id }, PaymentStatus.SUCCESS);
         // Publish Event
 
         break;
@@ -49,20 +56,71 @@ export async function handleStripeWebhookEvent(
 
       // Update FAILED
       const session = event.data.object;
-      await paymentRepository.updateStatus(session.id, PaymentStatus.FAILED);
+      await paymentRepository.updateStatus({ stripeSessionId: session.id }, PaymentStatus.FAILED);
 
       break;
     }
-    default:
-      console.log(`Unhandled event: ${event.type}`);
-      throw new Error(`Unhandled event type: ${event.type}`);
+    case "checkout.session.expired": {
+
+      // Update EXPIRED
+      const session = event.data.object;
+      await paymentRepository.updateStatus({ stripeSessionId: session.id }, PaymentStatus.EXPIRED);
+      break;
+    }
+    case "charge.refund.updated": {
+      const refund = event.data.object;
+      const paymentIntentId = refund.payment_intent?.toString() ?? "None";
+      if (refund.payment_intent) {
+        await paymentRepository.updateStatus({ stripePaymentIntentId: paymentIntentId }, PaymentStatus.REFUNDED);
+      }
+      break;
+    }
+    // default:
+    //   console.log(`Unhandled event: ${event.type}`);
+    //   throw new Error(`Unhandled event type: ${event.type}`);
+  }
+}
+export async function refundTransaction(stripeSessionId: string) {
+  try {
+    const payment = await paymentRepository.findUnique({ stripeSessionId: stripeSessionId })?.then(payment => {
+      if (!payment) {
+        throw new Error("Payment not found");
+      }
+      return payment;
+    });
+    const refund = await transactionRefund(payment);
+    return refund;
+  } catch (error) {
+    console.error("Error processing refund:", error);
+    throw new Error("Refund failed");
   }
 }
 export async function verifyPaymentStatus(stripeSessionId: string) {
-  const payment = await paymentRepository.findById(stripeSessionId);
-  if (!payment) {
-    console.error(`Payment with Stripe session ID ${stripeSessionId} not found`);
-    throw new Error("Payment not found");
+  if (stripeSessionId !== "") {
+    const payment = await paymentRepository.findUnique({ stripeSessionId: stripeSessionId });
+    if (!payment) {
+      console.error(`Payment with Stripe session ID ${stripeSessionId} not found`);
+      throw new Error("Payment not found");
+    }
+    return payment.status;
+  } else {
+    console.error("Stripe session ID is empty");
+    throw new Error("Stripe session ID is empty");
   }
-  return payment.status;
+}
+
+export async function getTransactionsByUserId(userId: string) {
+  if (userId !== "") {
+    {
+      const transactions = await paymentRepository.findTransactionByUserId(userId);
+      if (!transactions || transactions.length === 0) {
+        console.error(`No transactions found for user ID ${userId}`);
+        throw new Error("No transactions found for this user");
+      }
+      return transactions;
+    }
+  } else {
+    console.error("User ID is empty");
+    throw new Error("User ID is empty");
+  }
 }

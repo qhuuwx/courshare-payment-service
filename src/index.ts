@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import checkoutRouter from "./routes/checkout.route"
 import webhookRouter from "./routes/webhooks.route";
+import transactionRouter from "./routes/transaction.route";
 import { prisma } from "./prisma/prisma";
 // Load environment variables
 dotenv.config();
@@ -26,6 +27,7 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.use("/checkout", checkoutRouter);
+app.use("/transactions",transactionRouter);
 // Start Express Server
 const server = app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);

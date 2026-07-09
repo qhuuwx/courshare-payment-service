@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'EXPIRED');
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'REFUNDED', 'EXPIRED');
 
 -- CreateEnum
 CREATE TYPE "PaymentProvider" AS ENUM ('STRIPE', 'PAYPAL', 'MOMO', 'VNPAY');
@@ -14,6 +14,7 @@ CREATE TABLE "Payment" (
     "status" "PaymentStatus" NOT NULL,
     "provider" "PaymentProvider" NOT NULL,
     "stripeSessionId" TEXT,
+    "stripePaymentIntentId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -22,3 +23,6 @@ CREATE TABLE "Payment" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Payment_stripeSessionId_key" ON "Payment"("stripeSessionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Payment_stripePaymentIntentId_key" ON "Payment"("stripePaymentIntentId");
