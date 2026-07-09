@@ -1,4 +1,4 @@
-import { stripe,stripeWebhookSecret} from "../config/stripe";
+import { stripe, stripeWebhookSecret } from "../config/stripe";
 import { Payment } from "@prisma/client";
 
 
@@ -8,7 +8,7 @@ export async function createStripeCheckoutSession(
   const unitAmount = Math.round(+payment.amount * 100);
   const session = await stripe.checkout.sessions.create(
     {
-      success_url: `${process.env.FRONTEND_URL}/payment/success`,
+      success_url: `${process.env.FRONTEND_URL}/payment/success?`,
       cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
       mode: "payment",
       line_items: [
@@ -29,12 +29,18 @@ export async function createStripeCheckoutSession(
 }
 
 export function constructWebhookEvent(
-    body: Buffer,
-    signature: string
+  body: Buffer,
+  signature: string
 ) {
+  try {
     return stripe.webhooks.constructEvent(
-        body,
-        signature,
-        stripeWebhookSecret!
+      body,
+      signature,
+      stripeWebhookSecret!
     );
+  }
+  catch (err) {
+    console.error("Webhook signature verification failed.", err);
+    throw new Error(`Webhook Error: ${err}`);
+  }
 }

@@ -18,8 +18,8 @@ export async function createCheckoutSession(
     res.status(200).json({ message: "Stripe Checkout Session created", StripeCheckoutSessionId: result.id, StripeSessionUrl: result.url });
 }
 export async function verifyCheckout(req: Request, res: Response) {
-    const { stripeSessionId } = req.params;
-
+    const {stripeSessionId} = req.query;
+    console.log(`Verifying payment status for Stripe session ID: ${stripeSessionId}`);
     try {
         const paymentStatus = await paymentServices.verifyPaymentStatus(stripeSessionId);
         res.status(200).json({ message: "Payment status retrieved successfully", status: paymentStatus });

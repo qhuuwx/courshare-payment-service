@@ -61,6 +61,7 @@ export async function handleStripeWebhookEvent(
 export async function verifyPaymentStatus(stripeSessionId: string) {
   const payment = await paymentRepository.findById(stripeSessionId);
   if (!payment) {
+    console.error(`Payment with Stripe session ID ${stripeSessionId} not found`);
     throw new Error("Payment not found");
   }
   return payment.status;

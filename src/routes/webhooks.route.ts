@@ -1,4 +1,4 @@
-import { Router, raw } from "express";
+import { Router} from "express";
 import { handleStripeWebhook } from "../controllers/webhook.controller";
 
 const webhookRouter = Router();
