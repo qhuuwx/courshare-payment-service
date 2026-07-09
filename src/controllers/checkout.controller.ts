@@ -1,0 +1,22 @@
+import { Request, Response } from "express";
+import * as paymentServices from "../services/payment.service";
+
+export async function createCheckoutSession(
+    req: Request,
+    res: Response
+) {
+    const { userId, courseId, amount, currency, provider } = req.body;
+
+    const result = await paymentServices.createCheckoutSession({
+        userId,
+        courseId,
+        amount,
+        currency,
+        provider
+    });
+
+    res.status(200).json({ message: "Stripe Checkout Session created", StripeCheckoutSessionId: result.id, StripeSessionUrl: result.url });
+}
+export async function verifyCheckout(req: Request, res: Response) {
+
+}

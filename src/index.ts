@@ -1,16 +1,13 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { PrismaClient } from "@prisma/client";
-import paymentsRouter from "./routes/payments.route";
+import checkoutRouter from "./routes/checkout.route"
+import { prisma } from "./prisma/prisma";
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8083;
-
-// Initialize Prisma Client
-export const prisma = new PrismaClient();
 
 // Middleware
 app.use(cors());
@@ -23,7 +20,9 @@ app.get("/", (_req: Request, res: Response) => {
     status: "UP"
   });
 });
-app.use("/payments", paymentsRouter);
+
+app.use("/checkout", checkoutRouter);
+
 // Start Express Server
 const server = app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
