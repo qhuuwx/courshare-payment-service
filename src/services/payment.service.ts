@@ -76,7 +76,17 @@ export async function handleStripeWebhookEvent(
       // Update FAILED
       const session = event.data.object;
       await paymentRepository.updateStatus({ stripeSessionId: session.id }, PaymentStatus.FAILED);
+      // Publish Event
+      await paymentPublisher.publish({
 
+        eventType: PaymentEventType.PAYMENT_FAILED,
+        occurredAt: new Date().toISOString(),
+        payload: {
+          paymentId: session.id,
+          userId: session.metadata?.userId || "Unknown",
+          courseId: session.metadata?.courseId || "Unknown"
+        }
+      });
       break;
     }
     case "checkout.session.expired": {
@@ -84,6 +94,17 @@ export async function handleStripeWebhookEvent(
       // Update EXPIRED
       const session = event.data.object;
       await paymentRepository.updateStatus({ stripeSessionId: session.id }, PaymentStatus.EXPIRED);
+      const payment = await paymentRepository.findUnique({ stripeSessionId: session.id });
+      // Publish Event
+      await paymentPublisher.publish({
+        eventType: PaymentEventType.PAYMENT_EXPIRED,
+        occurredAt: new Date().toISOString(),
+        payload: {
+          paymentId: payment?.id || "Unknown",
+          userId: payment?.userId || "Unknown",
+          courseId: payment?.courseId || "Unknown"
+        }
+      });
       break;
     }
     case "charge.refund.updated": {
