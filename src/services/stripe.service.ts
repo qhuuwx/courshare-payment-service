@@ -5,27 +5,34 @@ import { Payment } from "@prisma/client";
 export async function createStripeCheckoutSession(
   payment: Payment
 ): Promise<any> {
-  const unitAmount = Math.round(+payment.amount * 100);
-  const session = await stripe.checkout.sessions.create(
-    {
-      success_url: `${process.env.FRONTEND_URL}/payment/success?`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: payment.currency,
-            product_data: {
-              name: `Course ID: ${payment.courseId}`,
+  try
+  {
+    const unitAmount = Math.round(+payment.amount * 100);
+    const session = await stripe.checkout.sessions.create(
+      {
+        success_url: `${process.env.FRONTEND_URL}/payment/success?`,
+        cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: payment.currency,
+              product_data: {
+                name: `Course ID: ${payment.courseId}`,
+              },
+              unit_amount: unitAmount,
             },
-            unit_amount: unitAmount,
-          },
-          quantity: 1
-        }
-      ],
-    }
-  )
-  return session;
+            quantity: 1
+          }
+        ],
+      }
+    )
+    return session;
+  }
+  catch (error) {
+    console.error("Error creating Stripe checkout session:", error);
+    throw new Error("Failed to create Stripe checkout session");
+  }
 }
 export async function transactionRefund(payment: Payment) {
   try {

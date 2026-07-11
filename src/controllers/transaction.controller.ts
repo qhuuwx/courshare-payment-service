@@ -8,7 +8,7 @@ export async function getTransactionsByUserId(req: Request, res: Response) {
     const transactions = await paymentService.getTransactionsByUserId(userId?.toString() ?? "");
     res.status(200).json({ message: "Transactions retrieved successfully", transactions });
   } catch (error) {
-    res.status(404).json({ message: "Transactions not found" });
+    res.status(404).json({ message: error instanceof Error ? error.message : "Get Transactions failed" });
   }
 }
 
@@ -20,6 +20,7 @@ export async function transactionRefund(req: Request, res: Response) {
     const refund = await paymentService.refundTransaction(Id);
     res.status(200).json({ message: "Refund processed successfully", refund });
   } catch (error) {
-    res.status(400).json({ message: "Refund failed" });
+    console.error(`Error processing refund for Stripe session ID ${Id}:`, error);
+    res.status(400).send({message: error instanceof Error ? error.message : "Refund failed"});
   }
 }
