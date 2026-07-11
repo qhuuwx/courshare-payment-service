@@ -2,6 +2,8 @@ import { PaymentRepository } from "../repositories/payment.repository";
 import { PaymentStatus, PaymentProvider } from "@prisma/client";
 import { createStripeCheckoutSession, transactionRefund } from "./stripe.service";
 import { Stripe } from "stripe/cjs/stripe.core";
+import { paymentPublisher } from "../publishers/payment.publisher";
+import { PaymentEventType} from "../events/payment.event";
 const paymentRepository = new PaymentRepository();
 
 interface CreatePendingPaymentInput {
@@ -49,7 +51,24 @@ export async function handleStripeWebhookEvent(
         await paymentRepository.update({ stripeSessionId: session.id }, { stripePaymentIntentId: paymentIntentId });
         await paymentRepository.updateStatus({ stripeSessionId: session.id }, PaymentStatus.SUCCESS);
         // Publish Event
+        const payment = await paymentRepository.findUnique({ stripeSessionId: session.id });
+        await paymentPublisher.publish({
 
+          eventType: PaymentEventType.COURSE_PURCHASED,
+
+          occurredAt: new Date().toISOString(),
+
+          payload: {
+
+            paymentId: payment?.id|| "Unknown",
+
+            userId: payment?.userId || "Unknown",
+
+            courseId: payment?.courseId || "Unknown"
+
+          }
+
+        });
         break;
       }
     case "payment_intent.payment_failed": {
@@ -70,8 +89,18 @@ export async function handleStripeWebhookEvent(
     case "charge.refund.updated": {
       const refund = event.data.object;
       const paymentIntentId = refund.payment_intent?.toString() ?? "None";
+      const payment = await paymentRepository.findUnique({ stripePaymentIntentId: paymentIntentId });
       if (refund.payment_intent) {
         await paymentRepository.updateStatus({ stripePaymentIntentId: paymentIntentId }, PaymentStatus.REFUNDED);
+        await paymentPublisher.publish({
+          eventType: PaymentEventType.COURSE_REFUNDED,
+          occurredAt: new Date().toISOString(),
+          payload: {
+            paymentId: payment?.id || "Unknown",
+            userId: payment?.userId || "Unknown",
+            courseId: payment?.courseId || "Unknown"
+          }
+        });
       }
       break;
     }
