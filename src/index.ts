@@ -1,7 +1,9 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import checkoutRouter from "./routes/checkout.route"
+import swaggerUi from "swagger-ui-express";
+import { swaggerDocument } from "./config/swagger";
+import checkoutRouter from "./routes/checkout.route";
 import webhookRouter from "./routes/webhooks.route";
 import transactionRouter from "./routes/transaction.route";
 import { prisma } from "./prisma/prisma";
@@ -17,6 +19,9 @@ app.use("/webhooks",express.raw({
   type: "application/json"
 }),webhookRouter);
 app.use(express.json());
+
+// Swagger documentation endpoint
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Roots/Health check endpoint
 app.get("/", (_req: Request, res: Response) => {
